@@ -1,5 +1,7 @@
 package com.hulk.sportcounter;
 
+import java.sql.Date;
+
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -12,6 +14,7 @@ import android.util.Log;
  * 
  */
 public class StepDetector implements SensorEventListener {
+	public static final String LOG_TAG = Constant.LOG_TAG + ".StepDetector";
 
 	public static int CURRENT_SETP = 0;
 
@@ -43,6 +46,7 @@ public class StepDetector implements SensorEventListener {
 		mYOffset = h * 0.5f;
 		mScale[0] = -(h * 0.5f * (1.0f / (SensorManager.STANDARD_GRAVITY * 2)));
 		mScale[1] = -(h * 0.5f * (1.0f / (SensorManager.MAGNETIC_FIELD_EARTH_MAX)));
+		Log.i(LOG_TAG, "Init mYOffset=" + mYOffset + ",mScale[0]=" + mScale[0] + ",mScale[1]=" + mScale[1]);
 		if (SettingsActivity.sharedPreferences == null) {
 			SettingsActivity.sharedPreferences = context.getSharedPreferences(
 					SettingsActivity.SETP_SHARED_PREFERENCES,
@@ -61,11 +65,11 @@ public class StepDetector implements SensorEventListener {
 	// public void onSensorChanged(int sensor, float[] values) {
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		// Log.i(Constant.STEP_SERVER, "StepDetector");
 		Sensor sensor = event.sensor;
-		// Log.i(Constant.STEP_DETECTOR, "onSensorChanged");
+		Log.i(LOG_TAG, "onSensorChanged Type= " + sensor.getType());
 		synchronized (this) {
 			if (sensor.getType() == Sensor.TYPE_ORIENTATION) {
+				Log.i(LOG_TAG, "onSensorChanged Sensor.TYPE_ORIENTATION........ ");
 			} else {
 				int j = (sensor.getType() == Sensor.TYPE_ACCELEROMETER) ? 1 : 0;
 				if (j == 1) {
@@ -78,13 +82,16 @@ public class StepDetector implements SensorEventListener {
 					float v = vSum / 3;
 
 					float direction = (v > mLastValues[k] ? 1: (v < mLastValues[k] ? -1 : 0));
+					Log.i(LOG_TAG, "onSensorChanged vSum=" + vSum + ", v= " + v + ",mScale[j]=" + mScale[j]
+							+ ",direction=" + direction + ",direction=" + direction + ",mLastDirections[k]"
+							+ mLastDirections[k] + ",mLastValues[k]=" + mLastValues[k]);
 					if (direction == -mLastDirections[k]) {
 						// Direction changed
 						int extType = (direction > 0 ? 0 : 1); // minumum or
 						// maximum?
 						mLastExtremes[extType][k] = mLastValues[k];
 						float diff = Math.abs(mLastExtremes[extType][k]- mLastExtremes[1 - extType][k]);
-
+						Log.i(LOG_TAG, "diff:" + diff + ", SENSITIVITY" + SENSITIVITY + ",extType=" + extType + ",k=" + k);
 						if (diff > SENSITIVITY) {
 							boolean isAlmostAsLargeAsPrevious = diff > (mLastDiff[k] * 2 / 3);
 							boolean isPreviousLargeEnough = mLastDiff[k] > (diff / 3);
@@ -92,9 +99,10 @@ public class StepDetector implements SensorEventListener {
 
 							if (isAlmostAsLargeAsPrevious && isPreviousLargeEnough && isNotContra) {
 								end = System.currentTimeMillis();
-								if (end - start > 500) {// 此时判断为走了一步
-									Log.i("StepDetector", "CURRENT_SETP:"
-											+ CURRENT_SETP);
+								// 此时判断为走了一步,只要存在加速度，每隔500ms记一次步
+								if (end - start > 500) {
+									Date date = new Date(end);
+									Log.i(LOG_TAG, "CURRENT_SETP:" + CURRENT_SETP + "" + date.toLocaleString());
 									CURRENT_SETP++;
 									mLastMatch = extType;
 									start = end;

@@ -34,6 +34,7 @@ import android.widget.TextView;
 @SuppressLint("HandlerLeak")
 public class StepCounterActivity extends Activity {
 
+	private static final String TAG = Constant.LOG_TAG + ".StepCounterActivity";
 	//定义文本框控件
 	private TextView tv_show_step;// 步数
 	private TextView tv_week_day;// 星期
@@ -520,6 +521,7 @@ public class StepCounterActivity extends Activity {
 		}
 
 		total_step = StepDetector.CURRENT_SETP;
+		Log.i(TAG, "countStep: total_step= " + total_step);
 	}
 
 	@Override
